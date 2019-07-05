@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Logs</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@4.2.7/dist/css/tabulator.min.css">
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <script type="text/javascript" src="https://unpkg.com/tabulator-tables@4.2.7/dist/js/tabulator.min.js"></script>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+        <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+        <style>
+            #log {
+                position: absolute;
+                top: 10px;
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+            }
+            #title {
+                margin: 0;
+                padding: 0;
+                height: 35px;
+            }
+            #logtable {
+                height: calc(99% - 35px);
+            }
+        </style>
+        <script>
+            $(function() {
+
+                var backendURL = "https://ovenbook.com/api/v1.0/gate.php";
+
+                var dialog = $("#dialog");
+                dialog.dialog({
+                    autoOpen: false,
+                    height: $(window).height() * 0.75,
+                    width: $(window).width()*0.75,
+                    resize: function(event, ui) {
+                        notesTable.redraw();
+                    }
+                });
+
+                function cellClick(e, cell) {
+                    var data = cell.getData();
+                    dialog.dialog("option", "title", data.node_title);
+                    dialog.dialog('open');
+                    notesTable.setData(backendURL, {
+                        action: 'getNodePosts',
+                        nodeId: data.node_id
+                    });
+                    notesTable.redraw();
+                }
+
+                function download() {
+                    logsTable.download('csv', 'data.csv');
+                }
+
+                var logsTable = new Tabulator("#logtable", {
+                    ajaxURL: backendURL, //ajax URL
+                    ajaxParams: {
+                        action: "getScanLogs",
+                        apiKey: "521C-8B9F-A248"
+                    },
+                    layout: "fitColumns", //fit columns to width of table (optional)
+                    footerElement: '<button id="csv" onclick="download();" class="tabulator-footer">Download</button>',
+                    columns: [ //Define Table Columns
+                        {title: "Time", field: "created_at", width: 150},
+                        {title: "User", field: "username", headerFilter: true},
+                        {title: "Project", field: "project_code", headerFilter: "autocomplete", headerFilterParams: {
+                                values: true,
+                                allowEmpty: true,
+                                showListOnEmpty: true,
+                                sortValuesList: "asc"
+                            }
+                        },
+                        {title: "Document", field: "document_code", headerFilter: true},
+                        {title: "Node", field: "node_title", headerFilter: true, cellClick: cellClick},
+                        {title: "Scanned At", field: "scanned_at", width: 150},
+                        {title: "Note", field: "note"}
+                    ],
+                    initialSort: [
+                        {column: 'scanned_at', dir: 'desc'}
+                    ]
+                });
+                logsTable.redraw();
+
+                var notesTable = new Tabulator("#notestable", {
+                    layout: "fitColumns", //fit columns to width of table (optional)
+                    height: "99%",
+                    placeholder: "No Data Available",
+                    columns: [ //Define Table Columns
+                        {title: "User", field: "username"},
+                        {title: "Note", field: "text_content"},
+                        {title: "Composed At", field: "composed_at", width: 150},
+                        {title: "Created At", field: "created_at", width: 150},
+                        {title: "Updated At", field: "updated_at", width: 150}
+                    ]
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div id="log">
+            <h3 id="title">SERVICETAK</h3>
+            <div id="logtable"></div>
+        </div>
+        <div id="dialog">
+            <div id="notestable"></div>
+        </div>
+    </body>
+</html>
